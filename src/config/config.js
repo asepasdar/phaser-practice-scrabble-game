@@ -4,12 +4,9 @@ export default {
 	parent: "phaser-example",
 	width: 2000,
 	height: 1580,
-	physics: {
-		default: 'arcade',
-		arcade: {
-			debug: false
-		}
-	},
+	audio: {
+        disableWebAudio: true
+    },
 	backgroundColor: 0x314D79,
 	dom: {
 		createContainer: true
