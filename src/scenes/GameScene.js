@@ -11,13 +11,24 @@ import config from "../config/config.js";
 var grid, playerControl, searchWords, timerContainer, playerTurn;
 var timer, inputText, hasilPencarianText;
 var dict;
+var gridCols, wordCols;
+
+//variable untuk kebutuh drag drop and snap
+var isDragging = false, dragObject;
 
 var tileLetters = [
             'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
             'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
             'w', 'x', 'y', 'z' ];
 
-var pointLetters = {'a': 1, 'b': 20};
+var pointLetters = 
+				{
+					'a': 1, 'b': 2, 'c': 3, 'd': 2, 'e': 1, 'f': 7, 
+					'g': 2, 'h': 3, 'i': 1, 'j': 4, 'k': 6, 'l': 4,
+					'm': 2, 'n': 1, 'o': 1, 'p': 4, 'q': 10, 'r': 2,
+					's': 2, 't': 8, 'u': 2, 'v': 15, 'w': 12, 'x': 25,
+					'y': 30, 'z': 40
+				};
 
 var gameOptions = {
     gemSize: 100,
@@ -27,7 +38,8 @@ var gameOptions = {
     },
     destroySpeed: 200,
     fallSpeed: 100,
-    scaleSize: 75
+    scaleSize: 75,
+    wordSize: 70
 }
 export default class GameScene extends Phaser.Scene{
 
@@ -54,14 +66,13 @@ export default class GameScene extends Phaser.Scene{
 
 	}
 	create() {
-		this.input.on('drag', function (pointer, gameObject, dragX, dragY) {
-	        gameObject.x = dragX;
-	        gameObject.y = dragY;
-    	});
 		var html = this.cache.text.get('dictionary');
     	dict = html.split('\n');
+
 	  	
 	  	grid = this.add.container(400, 60);
+	  	grid.setSize(1125, 1125);
+	  	grid.setInteractive();
         playerControl = this.add.container(750, 1400);
         searchWords = this.add.container(1800, 300);
         timerContainer = this.add.container(200, 120);
@@ -74,13 +85,16 @@ export default class GameScene extends Phaser.Scene{
         });
         this.sameGame.generateBoard();
         this.drawField();
-        this.drawDefaultLetter();
+        
         this.drawSearchDic();
         this.drawTimer();
         this.drawTurn();
+        this.drawDefaultLetter();
         this.canPick = true;
         this.input.on("pointerdown", this.tileSelect, this);
+        
 	}
+	
 	drawTurn(){
         var bg = this.add.sprite(0, 0, "timer");
         bg.displayWidth = 250;
@@ -127,7 +141,7 @@ export default class GameScene extends Phaser.Scene{
     		}
         });
 
-        inputText = this.add.rexInputText(-720, -240, 120, 30, config);
+        inputText = this.add.rexInputText(-1070, -245, 120, 30, config);
         inputText.placeholder = "Enter word here...";
 		inputText.setStyle("color", "#000000");
 		inputText.setStyle("backgroundColor", "#fff");
@@ -146,16 +160,16 @@ export default class GameScene extends Phaser.Scene{
     }
     drawDefaultLetter(){
         for(let i = 0; i < 6; i++){
-        	let gemX = gameOptions.scaleSize * i + gameOptions.scaleSize / 2;
+        	let gemX = gameOptions.wordSize * i + gameOptions.wordSize / 2;
         	let gem = this.add.sprite(0, 0, "letter");
-        	gem.displayWidth = gameOptions.scaleSize;
+        	gem.displayWidth = gameOptions.wordSize;
             gem.scaleY = gem.scaleX;
-
+            var wordChar = tileLetters[Phaser.Math.Between(0, 25)];
+           
             var style = { font: "bold 20px Arial", fill: "#f44336", wordWrap: true, wordWrap: { width: 100 }, align: "center" };
-        	var score = this.add.text(10, -35, "12", style);
-
         	var style2 = { font: "bold 40px Arial", fill: "#f44336", wordWrap: true, wordWrap: { width: 100 }, align: "center" };
-        	var word = this.add.text(-15, -20, tileLetters[Phaser.Math.Between(0, 25)].toUpperCase(), style2);
+        	var score = this.add.text(10, -35, pointLetters[wordChar], style);
+        	var word = this.add.text(-18, -20, wordChar.toUpperCase(), style2);
 
         	var wordContainer = this.add.container(gemX, 0);
 
@@ -163,12 +177,43 @@ export default class GameScene extends Phaser.Scene{
             wordContainer.add(gem);
             wordContainer.add(score);
             wordContainer.add(word);
-            wordContainer.setSize(75, 75);
+            wordContainer.setSize(gameOptions.wordSize, gameOptions.wordSize);
+            
+
+            wordContainer.customDefaultx = wordContainer.x;
+            wordContainer.customDefaulty = wordContainer.y;
+            wordContainer.customSafeDrop = false;
+
             wordContainer.setInteractive({
             	draggable: true
-            }).on('drag', function (pointer, wordContainer, dragX, dragY){
-            	console.log(wordContainer.x);
-            });
+            }).on('drag', function(pointer, dragX, dragY){
+				this.x = dragX;
+	        	this.y = dragY;
+			}).on('dragstart', function(pointer, dragX, dragY){
+
+			}).on('dragend', function(pointer, dragX, dragY){
+				if(!this.customSafeDrop){
+					playerControl.add(this);
+					this.x = this.customDefaultx;
+					this.y = this.customDefaulty;
+				}
+			}).on('drop', function(pointer, gameObject, target){
+				grid.add(this);
+				this.x = gameObject.x;
+				this.y = gameObject.y;
+				if(gameObject.customMyChild != null){
+					var oldChild = gameObject.customMyChild;
+					playerControl.add(oldChild);
+
+					oldChild.x = oldChild.customDefaultx;
+					oldChild.y = oldChild.customDefaulty;
+				}
+				gameObject.customMyChild = this;
+			}).on('dragenter', function(pointer, target){
+				this.customSafeDrop = true;
+			}).on('dragleave', function(pointer, target){
+				this.customSafeDrop = false;
+			});
         }
     }
     drawField(){
@@ -183,16 +228,28 @@ export default class GameScene extends Phaser.Scene{
                 let gem = this.add.sprite(gemX, gemY, "tiles", this.sameGame.getValueAt(i, j));
                 gem.displayWidth = gameOptions.scaleSize;
                 gem.scaleY = gem.scaleX;
+                gem.setInteractive({ 
+                	dropZone: true 
+                });
+                
                 grid.add(gem);
+
+                this.customMyChild = null;
                 this.sameGame.setCustomData(i, j, gem);
             }
         }
+    }
+    checkForPoints(){
+    	
     }
     tileSelect(pointer){
         console.log("tile di sentuh");
     }
     onSearchBtn(){
 
+    }
+    update(){
+    	timer.text = 99 - Math.floor(this.time.now/1000);
     }
 }
 class SameGame{
