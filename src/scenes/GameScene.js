@@ -8,6 +8,7 @@ import timeImg from "../assets/sprites/time.png";
 import arrowImg from "../assets/sprites/arrows.png";
 import rollImg from "../assets/sprites/roll.png";
 import playImg from "../assets/sprites/play.png";
+import coverImg from "../assets/sprites/bg.png";
 import config from "../config/config.js";
 
 var grid, playerControl, searchWords, timerContainer, playerTurn, playerPoint; // Container
@@ -26,7 +27,7 @@ var enemyData;
 var hitungMundur, angkaHitung = 0; //Kebutuhan untuk perhitungan mundur
 var eventCheckPlay, eventExtend; //Kebutuhan event
 var checkTime = 0; // untuk keperluan cek enemy point jika dalam 15 detik blm juga submit
-
+var coverBg;
 var myPointsText = "", enemyPointsText = ""; //Text untuk point pemain
 var myPoints = 0, enemyPoints = 0; //Jumlah point kedua pemain
 var setWord = []; //Array untuk tempat 1 set WORDS, di clear setiap kali re roll
@@ -83,6 +84,7 @@ export default class GameScene extends Phaser.Scene{
 		this.load.image("arrow", arrowImg);
 		this.load.image("roll", rollImg);
 		this.load.image("play", playImg);
+		this.load.image("coverImg", coverImg);
 	}
 	countDown(){
 		if(angkaHitung > 0){
@@ -133,15 +135,23 @@ export default class GameScene extends Phaser.Scene{
 		this.canPick = true;
 		//END
 
+		coverBg = this.add.image(1000, 790, "coverImg");
+		coverBg.displayWidth = 2000;
+		coverBg.displayHeight = 3160;
+		coverBg.setAlpha(0.5);
+		coverBg.setInteractive().on('pointerdown', function(){});
+
+
+		
 		//LETS GOOOOOOO
 		scene.prepareForGame();
 		
+
 	}
 	autoSubmit(){
-		angkaHitung = 14;
+		angkaHitung = 13;
 		scene.changeControl(true);
 		this.time.delayedCall(14000, scene.submitWords, [], this);
-		this.time.delayedCall(14000, scene.waitForEnemy, [], this);
 	}
 	insertWordtoGrid(target, data){
 		var wordContainer = this.add.container(target.x, target.y);
@@ -193,7 +203,7 @@ export default class GameScene extends Phaser.Scene{
 			returnValue = JSON.parse(returnValue);
 			if(returnValue["id"] == 0){
 				checkTime = 0;
-				eventExtend = this.time.addEvent({ delay: 1000, callback: scene.checkExtend, callbackScope: this, repeat: 5 });
+				eventExtend = this.time.addEvent({ delay: 1000, callback: scene.checkExtend, callbackScope: this, repeat: 10 });
 				//Lakukan looping untuk melakukan perulangan
 			}else{
 				enemyPoints += returnValue["point"];
@@ -214,7 +224,7 @@ export default class GameScene extends Phaser.Scene{
 			"room_id": roomData["id"],
 			"point": 0
 		}
-		if(checkTime > 5){
+		if(checkTime > 10){
 			apiControl.postRequest(ipaddr+'api/game', j, returnValue => {
 				returnValue = JSON.parse(returnValue);
 				enemyPoints += returnValue["point"];
@@ -243,11 +253,11 @@ export default class GameScene extends Phaser.Scene{
 	waitForEnemy(){
 		scene.changeControl(false);
 		if(myTurn > 2){
-			angkaHitung = 16;
+			angkaHitung = 15;
 			this.time.delayedCall(16000, scene.checkEnemyPoint, [], this);
 		}else{
-			angkaHitung = 14 + myTurn;
-			this.time.delayedCall((14+myTurn)*1000, scene.checkEnemyPoint, [], this);
+			angkaHitung = 13 + myTurn;
+			this.time.delayedCall((13+myTurn)*1000, scene.checkEnemyPoint, [], this);
 		}
 	}
 	checkPlay(){
@@ -261,6 +271,7 @@ export default class GameScene extends Phaser.Scene{
 				scene.autoSubmit();
 				enemyData = user_guestData;
 			}
+			coverBg.setVisible(false);
 			eventCheckPlay.remove();
 			hitungMundur = this.time.addEvent({ delay: 1000, callback: scene.countDown, callbackScope: this, loop: true });
 			return true;
@@ -268,9 +279,36 @@ export default class GameScene extends Phaser.Scene{
 		return false;
 	}
 	startPlay(){
-		if(scene.checkPlay() == false){
+		if(roomData["ready_p1"] == 1 && roomData["ready_p2"] == 1){
+			//TODO hilangkan cover 
+			if(sessionStorage.getItem("user_id") == user_guestData["id"]){
+				scene.changeControl(false);
+				enemyData = user_rmData;
+				scene.waitForEnemy();
+			}else{
+				scene.autoSubmit();
+				enemyData = user_guestData;
+			}
+			coverBg.setVisible(false);
+			eventCheckPlay.remove();
+			hitungMundur = this.time.addEvent({ delay: 1000, callback: scene.countDown, callbackScope: this, loop: true });
+		}else{
 			apiControl.getRequest(ipaddr+'api/values/'+sessionStorage.getItem("room_id"), returnValue => {
 				roomData = JSON.parse(returnValue);
+				if(roomData["ready_p1"] == 1 && roomData["ready_p2"] == 1){
+					//TODO hilangkan cover 
+					if(sessionStorage.getItem("user_id") == user_guestData["id"]){
+						scene.changeControl(false);
+						enemyData = user_rmData;
+						scene.waitForEnemy();
+					}else{
+						scene.autoSubmit();
+						enemyData = user_guestData;
+					}
+					coverBg.setVisible(false);
+					eventCheckPlay.remove();
+					hitungMundur = this.time.addEvent({ delay: 1000, callback: scene.countDown, callbackScope: this, loop: true });
+				}
 			});
 		}
 	}
@@ -602,6 +640,7 @@ export default class GameScene extends Phaser.Scene{
     		myPoints += returnValue["point"];
     		myPointsText.text = "You : "+myPoints;
     		myTurn++;
+    		scene.waitForEnemy();
     		scene.checkForWinner();
     	});
 
@@ -612,19 +651,31 @@ export default class GameScene extends Phaser.Scene{
     checkForWinner(){
     	console.log(myTurn + "vs" + enemyTurn);
     	if(myTurn == jumlahRound && myTurn == enemyTurn){
-    		if(myPoints == enemyPoints)
+    		var hasil = "";
+    		if(myPoints == enemyPoints){
     			console.log("DRAW");
-    		else{
-    			var WinLose = myPoints > enemyPoints ? "WIN" : "LOSE";
-    			console.log("You "+WinLose);
+    			hasil = "DRAW";
     		}
+    		else{
+    			hasil = myPoints > enemyPoints ? "YOU WIN" : "YOU LOSE";
+    			
+    			console.log(hasil);
+    		}
+    		coverBg.setVisible(true);
+    		var style = { font: "80px toon", fill: "#fff", align: "center" };
+			var score = this.add.text(860, 650, hasil, style);
+			hitungMundur.remove();
     		angkaHitung = 0;
     		scene.endGame();
     	}
     }
 
     endGame(){
-    	console.log("Akhiri permainan");
+    	this.time.delayedCall(7000, scene.pindah, [], this);
+    }
+
+    pindah(){
+    	this.scene.start('GameMenu');
     }
 
     checkForPoints(arrayParam){

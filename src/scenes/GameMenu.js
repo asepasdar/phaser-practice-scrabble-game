@@ -39,6 +39,7 @@ export default class GameScene extends Phaser.Scene{
 		this.load.image("createLobby", createLobby);
 	}
 	create() {
+		sessionStorage.removeItem('room_id');
 		apiControl = new ApiControl();
 		soundLobby = this.sound.add('sfxLobby');
 		background = this.add.image(1000, 790, "bg");
