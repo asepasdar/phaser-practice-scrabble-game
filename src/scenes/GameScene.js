@@ -57,7 +57,7 @@ var gameOptions = {
 	scaleSize: 75,
 	wordSize: 70
 }
-var ipaddr = 'https://172.16.8.234:45456/'; //ip address untuk API
+var ipaddr = 'https://172.16.8.162:45456/'; //ip address untuk API
 export default class GameScene extends Phaser.Scene{
 
 	constructor(){
