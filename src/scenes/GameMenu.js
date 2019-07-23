@@ -14,9 +14,10 @@ import config from "../config/config.js";
 var background, coverBg, containerLobby, allLobbyList, waitLobby, containerLogin; //Container
 var scene;
 var rmName, guestName;
+var waitGuest;
 var soundLobby; // Keperluan suara
 var apiControl; // Class ApiControl
-var ipaddr = 'https://172.16.8.162:45456/';
+var ipaddr = 'https://172.16.8.143:45456/';
 var userId = 0, userNameText, token = "", fb_id = "";
 export default class GameScene extends Phaser.Scene{
 
@@ -329,6 +330,23 @@ export default class GameScene extends Phaser.Scene{
 		rmName.text = sessionStorage.getItem("name");
 		guestName.text = "-";
 		waitLobby.setVisible(true);
+		waitGuest = this.time.addEvent({ delay: 1000, callback: scene.checkGuest, callbackScope: this, loop: true });
+	}
+	checkGuest(){
+		console.log("check guest");
+		apiControl.getRequest(ipaddr+"api/values/"+sessionStorage.getItem("room_id"), rvData =>{
+			rvData = JSON.parse(rvData);
+			if (rvData["user_guest"] != 1 && rvData["user_guest"] != 0)
+            {
+            	apiControl.getRequest(ipaddr+"api/user/" + rvData["user_guest"], data =>
+                {
+                	data = JSON.parse(data);
+                	guestName.text = data["name"];
+                	waitGuest.remove();
+                    scene.readyToGo();
+                });
+            }
+		});
 	}
 	createMyLobby(){
 		coverBg.setVisible(true);

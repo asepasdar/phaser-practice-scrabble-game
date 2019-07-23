@@ -57,7 +57,7 @@ var gameOptions = {
 	scaleSize: 75,
 	wordSize: 70
 }
-var ipaddr = 'https://172.16.8.162:45456/'; //ip address untuk API
+var ipaddr = 'https://172.16.8.143:45456/'; //ip address untuk API
 export default class GameScene extends Phaser.Scene{
 
 	constructor(){
@@ -335,17 +335,20 @@ export default class GameScene extends Phaser.Scene{
 			}
 			apiControl.postRequest(ipaddr+'api/start/0', readyParam, rReady =>{
 				eventCheckPlay = this.time.addEvent({ startAt: 0, delay: 1000, callback: scene.startPlay, callbackScope: this, loop: true });
+				console.log(rReady);
 			});
 			//END MERUBAH STATUS PEMAIN
 
 			//Get Detail user RM
 			apiControl.getRequest(ipaddr+'api/user/'+roomData["user_rm"], rval =>{
 				user_rmData = JSON.parse(rval);
+				console.log(rval);
 			});
 
 			//Get Detail User Guest
 			apiControl.getRequest(ipaddr+'api/user/'+roomData["user_guest"], rguest =>{
 				user_guestData = JSON.parse(rguest);
+				console.log(rguest);
 				//tambahkan event loop untuk function startPlay()
 			});
 

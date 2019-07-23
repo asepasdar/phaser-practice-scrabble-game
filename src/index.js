@@ -14,7 +14,7 @@ class Game extends Phaser.Game{
 }
 
 window.onload = function(){
-  window.game = new Game();
+    window.game = new Game();
   window.focus()
   resize();
   window.addEventListener("resize", resize, false);
