@@ -16,7 +16,6 @@
 
 ## Scrabble - Scripts
 
-- Gameplay Scripts - **Assets/Scripts/Gameplay/**
-- Lobby Scripts - **Assets/Scripts/Lobby/**
-- API - **Assets/Scripts/API/**
-- JSON Handler - **Assets/Scripts/Etc/**
+- Scene Scripts - **src/scenes/**
+- Config Scripts - **src/config/**
+- Plugins Scripts - **src/plugins/**
