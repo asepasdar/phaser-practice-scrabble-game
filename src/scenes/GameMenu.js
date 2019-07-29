@@ -17,7 +17,7 @@ var rmName, guestName;
 var waitGuest;
 var soundLobby; // Keperluan suara
 var apiControl; // Class ApiControl
-var ipaddr = 'https://172.16.8.143:45456/';
+var ipaddr = 'https://172.16.8.248:45456/';
 var userId = 0, userNameText, token = "", fb_id = "";
 export default class GameScene extends Phaser.Scene{
 
